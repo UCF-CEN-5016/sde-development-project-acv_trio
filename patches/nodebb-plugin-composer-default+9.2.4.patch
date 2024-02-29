@@ -1,148 +1,42 @@
-diff --git a/node_modules/nodebb-plugin-composer-default/static/less/medium.less b/node_modules/nodebb-plugin-composer-default/static/less/medium.less
-index b2856fb..6465a2f 100644
---- a/node_modules/nodebb-plugin-composer-default/static/less/medium.less
-+++ b/node_modules/nodebb-plugin-composer-default/static/less/medium.less
-@@ -1,66 +1,68 @@
- .composer {
--	min-height: 400px;
-+    min-height: 400px;
- 
--	.resizer {
--		display: block;
--	}
-+    .resizer {
-+        display: block;
-+    }
- 
--	.minimize {
--		display: block;
--	}
-+    .minimize {
-+        display: block;
-+    }
- 
--	&.reply .title-container {
--		display: flex;
--	}
-+    &.reply .title-container {
-+        display: flex;
-+    }
- 
--	.title-container {
--		border: 0;
-+    .title-container {
-+        border: 0;
-+        display: flex; /* Add this line */
-+        align-items: center; /* Add this line */
- 
--		.title, .handle {
--			font-size: 22px;
--			padding: 4px 18px;
--		}
--	}
-+        .title, .handle {
-+            font-size: 22px;
-+            padding: 4px 18px;
-+        }
-+    }
- 
--	.formatting-bar .formatting-group {
--		display: inline-block;
--	}
-+    .formatting-bar .formatting-group {
-+        display: inline-block;
-+    }
- 
--	&.resizable {
--		.box-shadow(0px 6px 12px rgba(0, 0, 0, 0.5));
-+    &.resizable {
-+        .box-shadow(0px 6px 12px rgba(0, 0, 0, 0.5));
- 
--		padding-top: 30px;
--		padding-left: 15px;
--		padding-right: 15px;
--	}
-+        padding-top: 30px;
-+        padding-left: 15px;
-+        padding-right: 15px;
-+    }
- 
--	.category-tag-row {
--		margin-top: 5px;
--		margin-bottom: 8px;
--	}
-+    .category-tag-row {
-+        margin-top: 5px;
-+        margin-bottom: 8px;
-+    }
- 
--	.write-preview-container {
--		margin-bottom: 15px;
--	}
-+    .write-preview-container {
-+        margin-bottom: 15px;
-+    }
- 
--	.write, .preview {
--		padding: 20px;
--	}
-+    .write, .preview {
-+        padding: 20px;
-+    }
- 
--	.write {
--		border: 1px solid #EDEDED;
--	}
-+    .write {
-+        border: 1px solid #EDEDED;
-+    }
- 
--	.tags-container {
--		margin-top: 8px - 15px;
--		margin-bottom: 8px;
-+    .tags-container {
-+        margin-top: 8px - 15px;
-+        margin-bottom: 8px;
- 
--		.bootstrap-tagsinput {
--			padding: 0;
-+        .bootstrap-tagsinput {
-+            padding: 0;
- 
--			input {
--				margin-left: -6px;
--			}
--		}
--	}
-+            input {
-+                margin-left: -6px;
-+            }
-+        }
-+    }
- }
 diff --git a/node_modules/nodebb-plugin-composer-default/static/lib/composer.js b/node_modules/nodebb-plugin-composer-default/static/lib/composer.js
-index 46334e7..dbf7403 100644
+index 46334e7..c7b4d55 100644
 --- a/node_modules/nodebb-plugin-composer-default/static/lib/composer.js
 +++ b/node_modules/nodebb-plugin-composer-default/static/lib/composer.js
-@@ -623,9 +623,12 @@ define('composer', [
+@@ -1,5 +1,7 @@
+ 'use strict';
+ 
++const { assert } = require("../../../../src/middleware");
++
+ define('composer', [
+ 	'taskbar',
+ 	'translator',
+@@ -622,16 +624,19 @@ define('composer', [
+ 		}, 20);
  	}
  
++    // type: async function post(post_uuid: ) => Promise<void>
  	async function post(post_uuid) {
-+		var ret; // for checking return types
++        var ret; // for checking return types
 +        assert.equal(typeof (post_uuid), 'string');
  		var postData = composer.posts[post_uuid];
  		var postContainer = $('.composer[data-uuid="' + post_uuid + '"]');
  		var handleEl = postContainer.find('.handle');
-+		var anonymousEl = postContainer.find('#anonymous').is(':checked');
++        var anonymousEl = postContainer.find('#anonymous').is(':checked');
  		var titleEl = postContainer.find('.title');
  		var bodyEl = postContainer.find('textarea');
  		var thumbEl = postContainer.find('input#topic-thumb-url');
-@@ -658,25 +661,52 @@ define('composer', [
+ 		var onComposeRoute = postData.hasOwnProperty('template') && postData.template.compose === true;
+ 		const submitBtn = postContainer.find('.composer-submit');
+-
+ 		titleEl.val(titleEl.val().trim());
+ 		bodyEl.val(utils.rtrim(bodyEl.val()));
+ 		if (thumbEl.length) {
+@@ -658,25 +663,52 @@ define('composer', [
  		$(window).trigger('action:composer.check', payload);
  
  		if (payload.error) {
 -			return composerAlert(post_uuid, payload.error);
-+			ret = composerAlert(post_uuid, payload.error);
++            ret = composerAlert(post_uuid, payload.error);
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
@@ -150,317 +44,130 @@ index 46334e7..dbf7403 100644
  
  		if (uploads.inProgress[post_uuid] && uploads.inProgress[post_uuid].length) {
 -			return composerAlert(post_uuid, '[[error:still-uploading]]');
-+			ret = composerAlert(post_uuid, '[[error:still-uploading]]');
-+			await ret;
-+			assert.equal(typeof (await ret), 'undefined');
-+			return ret;
++            ret = composerAlert(post_uuid, '[[error:still-uploading]]');
++            await ret;
++            assert.equal(typeof (await ret), 'undefined');
++            return ret;
  		} else if (checkTitle && payload.titleLen < parseInt(config.minimumTitleLength, 10)) {
 -			return composerAlert(post_uuid, '[[error:title-too-short, ' + config.minimumTitleLength + ']]');
-+			ret = composerAlert(post_uuid, '[[error:title-too-short, ' + config.minimumTitleLength + ']]');
++            ret = composerAlert(post_uuid, '[[error:title-too-short, ' + config.minimumTitleLength + ']]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		} else if (checkTitle && payload.titleLen > parseInt(config.maximumTitleLength, 10)) {
 -			return composerAlert(post_uuid, '[[error:title-too-long, ' + config.maximumTitleLength + ']]');
-+			ret = composerAlert(post_uuid, '[[error:title-too-long, ' + config.maximumTitleLength + ']]');
++            ret = composerAlert(post_uuid, '[[error:title-too-long, ' + config.maximumTitleLength + ']]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		} else if (action === 'topics.post' && !isCategorySelected) {
 -			return composerAlert(post_uuid, '[[error:category-not-selected]]');
-+			ret = composerAlert(post_uuid, '[[error:category-not-selected]]');
-+			await ret;
-+			assert.equal(typeof (await ret), 'undefined');
-+			return ret;
++            ret = composerAlert(post_uuid, '[[error:category-not-selected]]');
++            await ret;
++            assert.equal(typeof (await ret), 'undefined');
++            return ret;
  		} else if (payload.bodyLen < parseInt(config.minimumPostLength, 10)) {
 -			return composerAlert(post_uuid, '[[error:content-too-short, ' + config.minimumPostLength + ']]');
-+			ret = composerAlert(post_uuid, '[[error:content-too-short, ' + config.minimumPostLength + ']]');
++            ret = composerAlert(post_uuid, '[[error:content-too-short, ' + config.minimumPostLength + ']]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		} else if (payload.bodyLen > parseInt(config.maximumPostLength, 10)) {
 -			return composerAlert(post_uuid, '[[error:content-too-long, ' + config.maximumPostLength + ']]');
-+			ret = composerAlert(post_uuid, '[[error:content-too-long, ' + config.maximumPostLength + ']]');
++            ret = composerAlert(post_uuid, '[[error:content-too-long, ' + config.maximumPostLength + ']]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		} else if (checkTitle && !tags.isEnoughTags(post_uuid)) {
 -			return composerAlert(post_uuid, '[[error:not-enough-tags, ' + tags.minTagCount() + ']]');
-+			ret = composerAlert(post_uuid, '[[error:not-enough-tags, ' + tags.minTagCount() + ']]');
++            ret = composerAlert(post_uuid, '[[error:not-enough-tags, ' + tags.minTagCount() + ']]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		} else if (scheduler.isActive() && scheduler.getTimestamp() <= Date.now()) {
 -			return composerAlert(post_uuid, '[[error:scheduling-to-past]]');
-+			ret = composerAlert(post_uuid, '[[error:scheduling-to-past]]');
++            ret = composerAlert(post_uuid, '[[error:scheduling-to-past]]');
 +            await ret;
 +            assert.equal(typeof (await ret), 'undefined');
 +            return ret;
  		}
  
  		let composerData = {
-@@ -690,6 +720,7 @@ define('composer', [
+@@ -690,6 +722,7 @@ define('composer', [
  			composerData = {
  				...composerData,
  				handle: handleEl ? handleEl.val() : undefined,
-+				anonymous: anonymousEl,
++                anonymous: anonymousEl,
  				title: titleEl.val(),
  				content: bodyEl.val(),
  				thumb: thumbEl.val() || '',
-@@ -703,6 +734,7 @@ define('composer', [
+@@ -703,6 +736,7 @@ define('composer', [
  				...composerData,
  				tid: postData.tid,
  				handle: handleEl ? handleEl.val() : undefined,
-+				anonymous: anonymousEl,
++                anonymous: anonymousEl,
  				content: bodyEl.val(),
  				toPid: postData.toPid,
  			};
-@@ -713,6 +745,7 @@ define('composer', [
+@@ -713,6 +747,7 @@ define('composer', [
  				...composerData,
  				pid: postData.pid,
  				handle: handleEl ? handleEl.val() : undefined,
-+				anonymous: anonymousEl,
++                anonymous: anonymousEl,
  				content: bodyEl.val(),
  				title: titleEl.val(),
  				thumb: thumbEl.val() || '',
-@@ -780,7 +813,9 @@ define('composer', [
+@@ -759,7 +794,7 @@ define('composer', [
+ 				} else if (action === 'topics.post') {
+ 					if (submitHookData.redirect) {
+ 						ajaxify.go('topic/' + data.slug, undefined, (onComposeRoute || composer.bsEnvironment === 'xs' || composer.bsEnvironment === 'sm'));
+-					}
++                    }
+ 				} else if (action === 'posts.reply') {
+ 					if (onComposeRoute || composer.bsEnvironment === 'xs' || composer.bsEnvironment === 'sm') {
+ 						window.history.back();
+@@ -772,7 +807,6 @@ define('composer', [
+ 				} else {
+ 					removeComposerHistory();
+ 				}
+-
+ 				hooks.fire('action:composer.' + action, { composerData: composerData, data: data });
+ 			})
+ 			.catch((err) => {
+@@ -780,7 +814,9 @@ define('composer', [
  				composer.load(post_uuid);
  				textareaEl.prop('readonly', false);
  				if (err.message === '[[error:email-not-confirmed]]') {
 -					return messagesModule.showEmailConfirmWarning(err.message);
-+					ret = messagesModule.showEmailConfirmWarning(err.message);
++                    ret = messagesModule.showEmailConfirmWarning(err.message);
 +                    assert.equal(typeof (ret), 'undefined');
 +                    return ret;
  				}
  				composerAlert(post_uuid, err.message);
  			});
 diff --git a/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl b/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
-index cf9de24..3e91c4a 100644
+index cf9de24..aae22cb 100644
 --- a/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
 +++ b/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
-@@ -1,138 +1,97 @@
- <div component="composer" class="composer<!-- IF resizable --> resizable<!-- ENDIF resizable --><!-- IF !isTopicOrMain --> reply<!-- ENDIF !isTopicOrMain -->">
+@@ -52,6 +52,13 @@
+ 			</div>
  
--	<div class="composer-container">
--		<nav class="navbar navbar-fixed-top mobile-navbar hidden-md hidden-lg">
--			<div class="btn-group">
--				<button class="btn btn-sm btn-primary composer-discard" data-action="discard" tabindex="-1"><i class="fa fa-times"></i></button>
--				<button class="btn btn-sm btn-primary composer-minimize" data-action="minimize" tabindex="-1"><i class="fa fa-minus"></i></button>
--			</div>
--			<!-- IF isTopic -->
--			<div class="category-name-container">
--				<span class="category-name"></span> <i class="fa fa-sort"></i>
--			</div>
--			<!-- ENDIF isTopic -->
--			<!-- IF !isTopicOrMain -->
--			<h4 class="title">[[topic:composer.replying_to, "{title}"]]</h4>
--			<!-- ENDIF !isTopicOrMain -->
--			<div class="display-scheduler pull-right{{{ if !canSchedule }}} hidden{{{ end }}}">
--				<i class="fa fa-clock-o"></i>
--			</div>
--			<div class="btn-group">
--				<button class="btn btn-sm btn-primary composer-submit" data-action="post" tabindex="-1"><i class="fa fa-chevron-right"></i></button>
--			</div>
--		</nav>
--		<div class="row title-container">
--			{{{ if isTopic }}}
--			<div class="category-list-container hidden-sm hidden-xs">
--				<!-- IMPORT partials/category-selector.tpl -->
--			</div>
--			{{{ end }}}
-+    <div class="composer-container">
-+        <nav class="navbar navbar-fixed-top mobile-navbar hidden-md hidden-lg">
-+            <div class="btn-group">
-+                <button class="btn btn-sm btn-primary composer-discard" data-action="discard" tabindex="-1"><i class="fa fa-times"></i></button>
-+                <button class="btn btn-sm btn-primary composer-minimize" data-action="minimize" tabindex="-1"><i class="fa fa-minus"></i></button>
-+            </div>
-+            <!-- IF isTopic -->
-+            <div class="category-name-container">
-+                <span class="category-name"></span> <i class="fa fa-sort"></i>
-+            </div>
-+            <!-- ENDIF isTopic -->
-+            <!-- IF !isTopicOrMain -->
-+            <h4 class="title">[[topic:composer.replying_to, "{title}"]]</h4>
-+            <!-- ENDIF !isTopicOrMain -->
-+            <div class="display-scheduler pull-right{{{ if !canSchedule }}} hidden{{{ end }}}">
-+                <i class="fa fa-clock-o"></i>
-+            </div>
-+            <div class="btn-group">
-+                <button class="btn btn-sm btn-primary composer-submit" data-action="post" tabindex="-1"><i class="fa fa-chevron-right"></i></button>
-+            </div>
-+        </nav>
-+        <div class="row title-container">
-+            {{{ if isTopic }}}
-+            <div class="category-list-container hidden-sm hidden-xs">
-+                <!-- IMPORT partials/category-selector.tpl -->
-+            </div>
-+            {{{ end }}}
+ 			<div class="btn-group pull-right action-bar hidden-sm hidden-xs">
++			   <div class="action-bar">
++					<input class="anonymous" type="checkbox" value="" id="anonymous">
++					<label class="form-check-label" for="anonymous">
++						Make Anonymous
++					</label>
++				</div>
++				<div class="action-bar">
+ 				<button class="btn btn-default composer-discard" data-action="discard" tabindex="-1"><i class="fa fa-times"></i> [[topic:composer.discard]]</button>
  
--			<!-- IF showHandleInput -->
--			<div data-component="composer/handle">
--				<input class="handle form-control" type="text" tabindex="1" placeholder="[[topic:composer.handle_placeholder]]" value="{handle}" />
--			</div>
--			<!-- ENDIF showHandleInput -->
--			<div data-component="composer/title">
--				<!-- IF isTopicOrMain -->
--				<input class="title form-control" type="text" tabindex="1" placeholder="[[topic:composer.title_placeholder]]" value="{title}"/>
--				<!-- ELSE -->
--				<span class="title form-control">[[topic:composer.replying_to, "{title}"]]</span>
--				<!-- ENDIF isTopicOrMain -->
--				<div id="quick-search-container" class="quick-search-container hidden">
--					<div class="text-center loading-indicator"><i class="fa fa-spinner fa-spin"></i></div>
--					<div class="quick-search-results-container"></div>
--				</div>
--			</div>
-+            <!-- IF showHandleInput -->
-+            <div data-component="composer/handle">
-+                <input class="handle form-control" type="text" tabindex="1" placeholder="[[topic:composer.handle_placeholder]]" value="{handle}" />
-+            </div>
-+            <!-- ENDIF showHandleInput -->
-+            <div data-component="composer/title">
-+                <!-- IF isTopicOrMain -->
-+                <input class="title form-control" type="text" tabindex="1" placeholder="[[topic:composer.title_placeholder]]" value="{title}"/>
-+                <!-- ELSE -->
-+                <span class="title form-control">[[topic:composer.replying_to, "{title}"]]</span>
-+                <!-- ENDIF isTopicOrMain -->
-+                <div id="quick-search-container" class="quick-search-container hidden">
-+                    <div class="text-center loading-indicator"><i class="fa fa-spinner fa-spin"></i></div>
-+                    <div class="quick-search-results-container"></div>
-+                </div>
-+            </div>
+ 				<ul class="dropdown-menu">{{{ each submitOptions }}}<li><a href="#" data-action="{./action}">{./text}</a></li>{{{ end }}}</ul>
+@@ -60,6 +67,7 @@
+ 					<span class="caret"></span>
+ 					<span class="sr-only">[[topic:composer.additional-options]]</span>
+ 				</button>
++				</div>
+ 			</div>
+ 		</div>
  
--			<div class="pull-right draft-icon hidden-xs hidden-sm"></div>
-+            <div class="pull-right draft-icon hidden-xs hidden-sm"></div>
- 
--			<div class="display-scheduler pull-right hidden-sm hidden-xs{{{ if !canSchedule }}} hidden{{{ end }}}">
--				<i class="fa fa-clock-o"></i>
--			</div>
-+            <div class="display-scheduler pull-right hidden-sm hidden-xs{{{ if !canSchedule }}} hidden{{{ end }}}">
-+                <i class="fa fa-clock-o"></i>
-+            </div>
- 
--			<div class="btn-group pull-right action-bar hidden-sm hidden-xs">
--				<button class="btn btn-default composer-discard" data-action="discard" tabindex="-1"><i class="fa fa-times"></i> [[topic:composer.discard]]</button>
-+            <div class="btn-group pull-right action-bar hidden-sm hidden-xs">
-+                <div class="action-bar">
-+                    <input class="anonymous" type="checkbox" value="" id="anonymous">
-+                    <label class="form-check-label" for="anonymous">
-+                        Post Anonymously
-+                    </label>
-+                </div>
-+                <div class="action-bar">
-+                    <button class="btn btn-default composer-discard" data-action="discard" tabindex="-1"><i class="fa fa-times"></i> [[topic:composer.discard]]</button>
-+                    <ul class="dropdown-menu">{{{ each submitOptions }}}<li><a href="#" data-action="{./action}">{./text}</a></li>{{{ end }}}</ul>
-+                    <button class="btn btn-primary composer-submit" data-action="post" tabindex="6" data-text-variant=" [[topic:composer.schedule]]"><i class="fa fa-check"></i> [[topic:composer.submit]]</button>
-+                    <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-+                        <span class="caret"></span>
-+                        <span class="sr-only">[[topic:composer.additional-options]]</span>
-+                    </button>
-+                </div>
-+            </div>
-+        </div>
- 
--				<ul class="dropdown-menu">{{{ each submitOptions }}}<li><a href="#" data-action="{./action}">{./text}</a></li>{{{ end }}}</ul>
--				<button class="btn btn-primary composer-submit" data-action="post" tabindex="6" data-text-variant=" [[topic:composer.schedule]]"><i class="fa fa-check"></i> [[topic:composer.submit]]</button>
--				<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
--					<span class="caret"></span>
--					<span class="sr-only">[[topic:composer.additional-options]]</span>
--				</button>
--			</div>
--		</div>
-+        <!-- Add the following lines for the tag row -->
-+        <!-- IF isTopicOrMain -->
-+        <div class="tag-row">
-+            <div class="tags-container">
-+                <div class="btn-group dropup <!-- IF !tagWhitelist.length -->hidden<!-- ENDIF !tagWhitelist.length -->" component="composer/tag/dropdown">
-+                    <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" type="button">
-+                        <span class="visible-sm-inline visible-md-inline visible-lg-inline"><i class="fa fa-tags"></i></span>
-+                        [[tags:select_tags]]
-+                    </button>
-+                    <ul class="dropdown-menu">
-+                        <!-- BEGIN tagWhitelist -->
-+                        <li data-tag="{@value}"><a href="#">{@value}</a></li>
-+                        <!-- END tagWhitelist -->
-+                    </ul>
-+                </div>
-+                <input class="tags" type="text" class="form-control" placeholder="[[tags:enter_tags_here, {minimumTagLength}, {maximumTagLength}]]" tabindex="5"/>
-+            </div>
-+        </div>
-+        <!-- ENDIF isTopicOrMain -->
- 
--		<div class="category-tag-row">
--			<div class="btn-toolbar formatting-bar">
--				<ul class="formatting-group">
--					<!-- BEGIN formatting -->
--						<!-- IF formatting.spacer -->
--						<li class="spacer"></li>
--						<!-- ELSE -->
--						{{{ if (./visibility.desktop && ((isTopicOrMain && ./visibility.main) || (!isTopicOrMain && ./visibility.reply))) }}}
--						<li tabindex="-1" data-format="{formatting.name}" title="{formatting.title}"><i class="{formatting.className}"></i></li>
--						{{{ end }}}
--						<!-- ENDIF formatting.spacer -->
--					<!-- END formatting -->
-+        <div class="imagedrop"><div>[[topic:composer.drag_and_drop_images]]</div></div>
- 
--					<!-- IF privileges.upload:post:image -->
--					<li class="img-upload-btn" data-format="picture" tabindex="-1" title="[[modules:composer.upload-picture]]">
--						<i class="fa fa-file-image-o"></i>
--					</li>
--					<!-- ENDIF privileges.upload:post:image -->
--					<!-- IF privileges.upload:post:file -->
--					<li class="file-upload-btn" data-format="upload" tabindex="-1" title="[[modules:composer.upload-file]]">
--						<i class="fa fa-file-o"></i>
--					</li>
--					<!-- ENDIF privileges.upload:post:file -->
--
--					<form id="fileForm" method="post" enctype="multipart/form-data">
--						<input type="file" id="files" name="files[]" multiple class="gte-ie9 hide"/>
--					</form>
--				</ul>
--			</div>
--		</div>
--
--		<div class="row write-preview-container">
--			<div class="write-container">
--				<div class="help-text">
--					<span class="help hidden">[[modules:composer.compose]] <i class="fa fa-question-circle"></i></span>
--					<span class="toggle-preview hide">[[modules:composer.show_preview]]</span>
--				</div>
--				<div class="pull-right draft-icon hidden-md hidden-lg"></div>
--				<textarea class="write" tabindex="4" placeholder="[[modules:composer.textarea.placeholder]]">{body}</textarea>
--			</div>
--			<div class="hidden-sm hidden-xs preview-container">
--				<div class="help-text">
--					<span class="toggle-preview">[[modules:composer.hide_preview]]</span>
--				</div>
--				<div class="preview well"></div>
--			</div>
--		</div>
--
--		<!-- IF isTopicOrMain -->
--		<div class="tag-row">
--			<div class="tags-container">
--				<div class="btn-group dropup <!-- IF !tagWhitelist.length -->hidden<!-- ENDIF !tagWhitelist.length -->" component="composer/tag/dropdown">
--					<button class="btn btn-default dropdown-toggle" data-toggle="dropdown" type="button">
--						<span class="visible-sm-inline visible-md-inline visible-lg-inline"><i class="fa fa-tags"></i></span>
--						[[tags:select_tags]]
--					</button>
--
--					<ul class="dropdown-menu">
--						<!-- BEGIN tagWhitelist -->
--						<li data-tag="{@value}"><a href="#">{@value}</a></li>
--						<!-- END tagWhitelist -->
--					</ul>
--				</div>
--				<input class="tags" type="text" class="form-control" placeholder="[[tags:enter_tags_here, {minimumTagLength}, {maximumTagLength}]]" tabindex="5"/>
--			</div>
--		</div>
--		<!-- ENDIF isTopicOrMain -->
--
--		<div class="imagedrop"><div>[[topic:composer.drag_and_drop_images]]</div></div>
--
--		<div class="resizer"><div class="trigger text-center"><i class="fa"></i></div></div>
--	</div>
-+        <div class="resizer"><div class="trigger text-center"><i class="fa"></i></div></div>
-+    </div>
- </div>

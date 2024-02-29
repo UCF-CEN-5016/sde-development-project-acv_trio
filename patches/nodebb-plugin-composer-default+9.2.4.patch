@@ -146,7 +146,7 @@ index 46334e7..c7b4d55 100644
  				composerAlert(post_uuid, err.message);
  			});
 diff --git a/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl b/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
-index cf9de24..aae22cb 100644
+index cf9de24..b3f82f6 100644
 --- a/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
 +++ b/node_modules/nodebb-plugin-composer-default/static/templates/composer.tpl
 @@ -52,6 +52,13 @@
@@ -156,7 +156,7 @@ index cf9de24..aae22cb 100644
 +			   <div class="action-bar">
 +					<input class="anonymous" type="checkbox" value="" id="anonymous">
 +					<label class="form-check-label" for="anonymous">
-+						Make Anonymous
++						Post Anonymously
 +					</label>
 +				</div>
 +				<div class="action-bar">

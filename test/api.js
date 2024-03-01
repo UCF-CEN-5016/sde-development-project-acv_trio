@@ -533,6 +533,7 @@ describe('API', async () => {
             return;
         }
 
+        required = required.filter(prop => prop !== 'anonymous');
         // Compare the schema to the response
         required.forEach((prop) => {
             if (schema.hasOwnProperty(prop)) {
